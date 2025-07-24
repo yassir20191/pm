@@ -64,3 +64,5 @@ func main() {
 		fmt.Println(" -", repo.FullName)
 	}
 }
+
+const test = "test"

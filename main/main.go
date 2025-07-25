@@ -13,6 +13,7 @@ import (
 )
 
 func main() {
+	activeSessionClient := gitClient.NewGitHubClient("GITHUB_TOKEN")
 	if len(os.Args) > 1 && os.Args[1] == "tui" {
 		token := os.Getenv("GITHUB_TOKEN")
 		if token == "" {
@@ -20,7 +21,7 @@ func main() {
 		}
 
 		defaultSince := time.Now().AddDate(0, 0, -7)
-		defaultSummary := gitService.BuildSummary(token, defaultSince)
+		defaultSummary := gitService.BuildSummary(activeSessionClient, token, defaultSince)
 
 		period, since, ok := tui.RunWithTokenWithSummary(token, defaultSummary)
 

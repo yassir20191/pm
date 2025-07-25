@@ -1,14 +1,93 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/google/go-github/v55/github"
+	"golang.org/x/oauth2"
 	"net/http"
 	"pm/models"
+	"strings"
 	"time"
 )
 
 const githubAPI = "https://api.github.com"
+
+func NewGitHubClient(token string) *github.Client {
+	ctx := context.Background()
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
+	tc := oauth2.NewClient(ctx, ts)
+
+	return github.NewClient(tc)
+}
+
+func GetPRReposFromSearch(client *github.Client, username string, since time.Time) ([]models.GithubRepo, error) {
+	ctx := context.Background()
+	query := fmt.Sprintf("author:%s type:pr created:>=%s", username, since.Format("2006-01-02"))
+
+	opts := &github.SearchOptions{Sort: "created", Order: "desc", ListOptions: github.ListOptions{PerPage: 100}}
+	allRepos := make(map[string]bool)
+
+	for {
+		results, resp, err := client.Search.Issues(ctx, query, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, item := range results.Issues {
+			if item.RepositoryURL != nil {
+				repoURL := *item.RepositoryURL
+				parts := strings.Split(repoURL, "/")
+				if len(parts) >= 2 {
+					fullName := parts[len(parts)-2] + "/" + parts[len(parts)-1]
+					allRepos[fullName] = true
+				}
+			}
+		}
+
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+
+	var repos []models.GithubRepo
+	for fullName := range allRepos {
+		parts := strings.Split(fullName, "/")
+		if len(parts) != 2 {
+			continue
+		}
+
+		repo, _, err := client.Repositories.Get(ctx, parts[0], parts[1])
+		if err != nil {
+			continue // Skip if any repo info can't be fetched
+		}
+
+		repos = append(repos, models.GithubRepo{
+			Name:            repo.GetName(),
+			FullName:        repo.GetFullName(),
+			HTMLURL:         repo.GetHTMLURL(),
+			UpdatedAt:       repo.GetUpdatedAt().Format(time.RFC3339),
+			Owner:           models.GithubUser{Login: repo.Owner.GetLogin()},
+			StargazersCount: repo.GetStargazersCount(),
+			ForksCount:      repo.GetForksCount(),
+			WatchersCount:   repo.GetWatchersCount(),
+		})
+	}
+
+	return repos, nil
+}
+
+func FetchRepoMetadata(client *github.Client, fullName string) (*github.Repository, error) {
+	ctx := context.Background()
+	parts := strings.Split(fullName, "/")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid repo name: %s", fullName)
+	}
+	repo, _, err := client.Repositories.Get(ctx, parts[0], parts[1])
+	return repo, err
+}
 
 func GetUserRepos(token string, since time.Time) ([]models.GithubRepo, error) {
 	url := fmt.Sprintf("%s/user/repos?per_page=100", githubAPI)

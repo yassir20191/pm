@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/google/go-github/v55/github"
 	"log"
 	githubclient "pm/client"
 	"pm/models"
@@ -129,7 +130,7 @@ func CalculateTotalPRs(token string, since time.Time) (int, error) {
 	if err != nil {
 		log.Fatalf("Failed to fetch repos: %v", err)
 	}
-	
+
 	for _, repo := range repos {
 		parts := strings.Split(repo.FullName, "/")
 		if len(parts) != 2 {
@@ -150,14 +151,14 @@ func CalculateTotalPRs(token string, since time.Time) (int, error) {
 	return total, nil
 }
 
-func BuildSummary(token string, since time.Time) string {
+func BuildSummary(client *github.Client, token string, since time.Time) string {
 	username, err := githubclient.GetGitHubUsername(token)
 	if err != nil {
 		log.Println("⚠️ Could not retrieve GitHub username:", err)
 		return "No data available"
 	}
 
-	repos, err := githubclient.GetUserRepos(token, since)
+	repos, err := githubclient.GetPRReposFromSearch(client, username, since)
 	if err != nil {
 		log.Println("⚠️ Error fetching repos:", err)
 		return "No data available"

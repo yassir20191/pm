@@ -1,0 +1,20 @@
+name: Trigger Profile Badge Update
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  dispatch-profile-workflow:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger repository_dispatch event on profile repo
+        run: |
+          curl -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: token ${{ secrets.PROFILE_REPO_PAT }}" \
+            https://api.github.com/repos/yassir20191/yassir20191/dispatches \
+            -d '{"event_type":"trigger-badge-update"}'

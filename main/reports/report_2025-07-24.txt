@@ -1,0 +1,24 @@
+Yearly report
+
+📊 Developer Metrics Report
+
+📁 Repositories Included:
+ - yassir20191/pm
+   Languages: Go
+   🟢 PR: test
+     Description : Description : testing my implementation 
+     📁 Files changed: 1
+     ✍️ Lines changed: +2 -0
+
+📊 Pull Request Metrics:
+🧮 Total Merged PRs: 1
+⏱ Average Time to Merge: 3m0s
+
+📈 Commit-Level Metrics:
+🔢 Total Commits: 4
+
+📌 Issue Engagement Metrics:
+
+
+👥 Collaboration Metrics:
+
